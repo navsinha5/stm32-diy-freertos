@@ -2,12 +2,13 @@
 #include "task.h"
 #include "led.h"
 #include "usart1.h"
+#include "stm32f1xx.h"
 
-TaskHandle_t sendHelloHandle = NULL;
-TaskHandle_t sendWorldHandle = NULL;
+volatile uint16_t delay = 2000U;
 
-void sendHello(void *pvParameters);
-void sendWorld(void *pvParameters);
+TaskHandle_t toggleLedHandle = NULL;
+
+void xToggleLed(void *pvParameters);
 
 int main(void){
     /* initialize led and usart1 */
@@ -15,8 +16,7 @@ int main(void){
     initUsart();
 
     /* create task */
-    xTaskCreate(sendHello, "hello-uart", configMINIMAL_STACK_SIZE, NULL, 2, &sendHelloHandle);
-    xTaskCreate(sendWorld, "world-uart", configMINIMAL_STACK_SIZE, NULL, 2, &sendWorldHandle);
+    xTaskCreate(xToggleLed, "toggle-led", configMINIMAL_STACK_SIZE, NULL, 2, &toggleLedHandle);
 
     /* start task schedular */
     vTaskStartScheduler();
@@ -26,33 +26,37 @@ int main(void){
 }
 
 
-void sendHello(void *pvParameters){
+void xToggleLed(void *pvParameters){
     while(1){
-        send('h');
-        send('e');
-        send('l');
-        send('l');
-        send('o');
-        send(' ');
-        taskYIELD();
+        toggle();
+        vTaskDelay(pdMS_TO_TICKS(delay));
     }
 
     vTaskDelete(NULL);
 }
 
 
-void sendWorld(void *pvParameters){
-    while(1){
-        send('w');
-        send('o');
-        send('r');
-        send('l');
-        send('d');
-        send('!');
-        send('\r');
-        send('\n');
-        taskYIELD();
-    }
+/* USART1 global interrupt handler implementation */
+void USART1_IRQHandler(void){
+    /* check if data is available to read */
+    if(USART1->SR & USART_SR_RXNE){
+        uint8_t value = USART1->DR;
+        switch(value){
+            case 'a':
+                delay = 200U;
+                break;
+            
+            case 'b':
+                delay = 500U;
+                break;
 
-    vTaskDelete(NULL);
+            case 'c':
+                delay = 1000U;
+                break;
+
+            default:
+                break;
+        }
+        send(value);
+    }
 }

@@ -48,9 +48,9 @@ void initUsart(void){
     USART1->CR1 |= USART_CR1_RXNEIE;
 
     /* enable USART1 global interrupt */
-    // __disable_irq();
-    // __NVIC_EnableIRQ(USART1_IRQn);
-    // __enable_irq();
+    __disable_irq();
+    __NVIC_EnableIRQ(USART1_IRQn);
+    __enable_irq();
 }
 
 
